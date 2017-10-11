@@ -5,8 +5,13 @@
 </head>
 <header>
   <% include ./partials/_header %>
+  <h2> ShortURL: <b> <%= shortURL %> </b> </h2>
 </header>
 <body>
-      <p> Full URL: <%= fullURL %>  ----  Shortened form: <%= shortURL %> </p>
+      <form method="POST" action="/urls/<%= shortURL %>"> 
+        <input type="text" name="longURL" value="<%= fullURL %>"> 
+        <input type="submit" value="Update">
+          
+      </form>
 </body>
 </html>

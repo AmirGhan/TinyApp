@@ -33,7 +33,6 @@ app.post("/urls", (req, res) => {
   var value = req.body["longURL"];
   var key = generateRandomString();
   urlDatabase[key] = value;
-  console.log(urlDatabase)
   res.redirect(`/urls/${key}`);         
 });
 
@@ -47,13 +46,19 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:id", (req, res) => {
-  var fullURL = urlDatabase[req.params.id]
+  var fullURL = urlDatabase[req.params.id];
   let templateVars = { shortURL: req.params.id, fullURL: fullURL };
   res.render("urls_show", templateVars);
 });
 
 app.post("/urls/:id/delete", (req, res) => {
-  delete urlDatabase[req.params.id]
+  delete urlDatabase[req.params.id];
+  res.redirect("/urls");
+});
+
+app.post("/urls/:id", (req, res) => {
+  var newLongURL = req.body["longURL"];
+  urlDatabase[req.params.id] = newLongURL;
   res.redirect("/urls");
 });
 
