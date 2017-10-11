@@ -12,17 +12,17 @@ var urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
-app.get("/", (req, res) => {
-  res.end("Hello!");
-});
+// app.get("/", (req, res) => {
+//   res.end("Hello!");
+// });
 
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
-});
+// app.get("/urls.json", (req, res) => {
+//   res.json(urlDatabase);
+// });
 
-app.get("/hello", (req, res) => {
-  res.end("<html><body>Hello <b>World</b></body></html>\n");
-});
+// app.get("/hello", (req, res) => {
+//   res.end("<html><body>Hello <b>World</b></body></html>\n");
+// });
 
 app.get("/urls", (req, res) => {
   let templateVars = { urls: urlDatabase };
@@ -30,8 +30,16 @@ app.get("/urls", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  console.log(req.body);  // debug statement to see POST parameters
-  res.send("Ok");         // Respond with 'Ok' (we will replace this)
+  var value = req.body["longURL"];
+  var key = generateRandomString();
+  urlDatabase[key] = value;
+  console.log(urlDatabase)
+  res.redirect(`/urls/${key}`);         
+});
+
+app.get("/u/:shortURL", (req, res) => {
+  let longURL = urlDatabase[req.params.shortURL]
+  res.redirect(longURL);
 });
 
 app.get("/urls/new", (req, res) => {
@@ -45,11 +53,13 @@ app.get("/urls/:id", (req, res) => {
 });
 
 
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
-
+// found on : https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
+// npm randonstring library : https://www.npmjs.com/package/randomstring
 function generateRandomString() {
   var randomString = "";
   var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -59,5 +69,3 @@ function generateRandomString() {
 
   return randomString;
 }
-
-console.log(generateRandomString());
