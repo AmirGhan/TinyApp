@@ -28,7 +28,7 @@ var urlDatabase = {
 // });
 
 app.get("/urls", (req, res) => {
-  let templateVars = { urls: urlDatabase };
+  let templateVars = { urls: urlDatabase, username: req.cookies["username"] };
   res.render("urls_index", templateVars);
 });
 
@@ -45,12 +45,13 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  let templateVars = { username: req.cookies["username"] };
+  res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:id", (req, res) => {
   var fullURL = urlDatabase[req.params.id];
-  let templateVars = { shortURL: req.params.id, fullURL: fullURL };
+  let templateVars = { shortURL: req.params.id, fullURL: fullURL, username: req.cookies["username"] };
   res.render("urls_show", templateVars);
 });
 
@@ -78,7 +79,7 @@ app.listen(PORT, () => {
 });
 
 // found on : https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
-// npm randonstring library : https://www.npmjs.com/package/randomstring
+// npm randomstring library : https://www.npmjs.com/package/randomstring
 function generateRandomString() {
   var randomString = "";
   var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
