@@ -89,6 +89,17 @@ app.post("/register", (req, res) => {
   let newUserRandomID = generateRandomString();
   let newEmail = req.body["email"];
   let newPassword = req.body["password"];
+  
+  if (newEmail == "" || newPassword == "") {
+    res.status(400).end("Make sure both email and password are entered.")
+  } 
+
+  for (let user_id in users) {
+    if (users[user_id].email == newEmail) {
+      res.status(400).end("User already exists.")
+    }
+  }
+  
   users[newUserRandomID] = {"id": newUserRandomID, "email": newEmail, "password": newPassword };
   res.cookie("user_id", newUserRandomID);
   console.log(users);
