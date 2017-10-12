@@ -30,7 +30,8 @@ const users = {
 
 
 app.get("/urls", (req, res) => {
-  let templateVars = { urls: urlDatabase, username: req.cookies["username"] };
+  let userID = req.cookies["user_id"];
+  let templateVars = { urls: urlDatabase, user: users[userID] };
   res.render("urls_index", templateVars);
 });
 
@@ -47,13 +48,15 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 app.get("/urls/new", (req, res) => {
-  let templateVars = { username: req.cookies["username"] };
+  let userID = req.cookies["user_id"];
+  let templateVars = { user: users[userID]  };
   res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:id", (req, res) => {
   var fullURL = urlDatabase[req.params.id];
-  let templateVars = { shortURL: req.params.id, fullURL: fullURL, username: req.cookies["username"] };
+  let userID = req.cookies["user_id"];
+  let templateVars = { shortURL: req.params.id, fullURL: fullURL, user: users[userID]  };
   res.render("urls_show", templateVars);
 });
 
@@ -68,20 +71,16 @@ app.post("/urls/:id", (req, res) => {
   res.redirect("/urls");
 });
 
-app.post("/login", (req, res) => {
-  var username = req.body["username"];
-  res.cookie("username", username);
-  res.redirect("/urls");
-});
 
 app.post("/logout", (req, res) => {
-  res.clearCookie("username");
+  res.clearCookie("user_id");
   res.redirect("/urls");
 });
 
 
 app.get("/register", (req, res) => {
-  let templateVars = { username: req.cookies["username"] };
+  let userID = req.cookies["user_id"];
+  let templateVars = { user: users[userID] };
   res.render("registration", templateVars);
 });
 
@@ -89,7 +88,7 @@ app.post("/register", (req, res) => {
   let newUserRandomID = generateRandomString();
   let newEmail = req.body["email"];
   let newPassword = req.body["password"];
-  
+
   if (newEmail == "" || newPassword == "") {
     res.status(400).end("Make sure both email and password are entered.")
   } 
@@ -102,11 +101,29 @@ app.post("/register", (req, res) => {
   
   users[newUserRandomID] = {"id": newUserRandomID, "email": newEmail, "password": newPassword };
   res.cookie("user_id", newUserRandomID);
-  console.log(users);
   res.redirect("/urls");
-
 });
 
+app.get("/login", (req, res) => {
+  res.render("login")
+});
+
+app.post("/login", (req, res) => {
+  let email = req.body["email"];
+  let password = req.body["password"];
+
+  if (email == "" || password == "") {
+    res.status(400).end("Make sure both email and password are entered.")
+  } 
+
+  for (let user_id in users) {
+    if (users[user_id].email === email && users[user_id].password === password) {
+      res.cookie("user_id", user_id);
+      res.redirect("/urls");
+    }
+  };
+  res.status(403).end("You have the wrong credentials.");
+});
 
 
 app.listen(PORT, () => {
