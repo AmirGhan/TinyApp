@@ -10,6 +10,8 @@ app.use(cookieParser());
 
 app.set("view engine", "ejs");
 
+const bcrypt = require('bcrypt');
+
 const urlDatabase = {
   "b2xVn2": {
     shortURL: "b2xVn2",
@@ -146,6 +148,7 @@ app.post("/register", (req, res) => {
   let newUserRandomID = generateRandomString();
   let newEmail = req.body["email"];
   let newPassword = req.body["password"];
+  const hashedPassword = bcrypt.hashSync(newPassword, 10);
 
   if (newEmail == "" || newPassword == "") {
     res.status(400).end("Make sure both email and password are entered.")
@@ -157,7 +160,7 @@ app.post("/register", (req, res) => {
     }
   }
   
-  users[newUserRandomID] = {"id": newUserRandomID, "email": newEmail, "password": newPassword };
+  users[newUserRandomID] = {"id": newUserRandomID, "email": newEmail, "password": hashedPassword };
   res.cookie("user_id", newUserRandomID);
   res.redirect("/urls");
 });
@@ -176,7 +179,7 @@ app.post("/login", (req, res) => {
   } 
 
   for (let user_id in users) {
-    if (users[user_id].email === email && users[user_id].password === password) {
+    if (users[user_id].email === email && bcrypt.compareSync(password, users[user_id].password)) {
       res.cookie("user_id", user_id);
       res.redirect("/urls");
     }
