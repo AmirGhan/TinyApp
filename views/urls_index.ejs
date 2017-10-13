@@ -5,12 +5,17 @@
 </head>
 <header>
   <% include ./partials/_header %>
+    <% if (errorMsg) { %>
+  <ul>
+    <li><b><%= errorMsg %></b></li>
+  </ul>
+  <% } %>
 </header>
 <body>
   <ul> 
     <% for (var key in urls) { %>
 
-      <li>  <%= key %> ----> <%= urls[key] %>   - <a href="/urls/<%= key %>">Edit</a>
+      <li>  <%= key %> ----> <%= urls[key].longURL %>   - <a href="/urls/<%= key %>">Edit</a>
         <form style="display: inline-block;" method="POST" action="/urls/<%= key %>/delete">
           <input type="submit" value="Delete">
         </form>
