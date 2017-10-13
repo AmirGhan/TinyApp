@@ -85,8 +85,12 @@ app.post("/urls", (req, res) => {
 });
 
 app.get("/u/:shortURL", (req, res) => {
-  let longURL = urlDatabase[req.params.shortURL].longURL
-  res.redirect(longURL);
+  let fullURL = urlDatabase[req.params.shortURL].longURL;
+  let userID = req.session.user_id;
+  if (!userID) {
+  res.redirect("/")
+  };
+  res.redirect(fullURL);
 });
 
 app.get("/urls/new", (req, res) => {

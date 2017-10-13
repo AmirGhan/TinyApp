@@ -2,7 +2,10 @@
 
 <% if(user) { %>
   <form method="POST" action="/logout">
-    <input type="submit" value="Logout">
+    <p> <b><%= user.email %></b> </p>
+    <input type="submit" value="Logout"><br>
+    <br>
+    <a href="/urls/new">Create a New Short Link</a>
   </form>
 
 <% } else { %>
