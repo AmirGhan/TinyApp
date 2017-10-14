@@ -1,13 +1,17 @@
-var express = require("express");
-var app = express();
-var PORT = process.env.PORT || 8080; // default port 8080
+//==============================================================================================================================
+// MIDDLEWARES
+//==============================================================================================================================
+
+const express = require("express");
+const app = express();
+const PORT = process.env.PORT || 8080; // default port 8080
 
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
 
-// var cookieParser = require('cookie-parser');
-// app.use(cookieParser());
-var cookieSession = require('cookie-session');
+const bcrypt = require('bcrypt');
+
+const cookieSession = require('cookie-session');
 app.use(cookieSession({
   name: 'session',
   keys: ['key1'],
@@ -16,7 +20,11 @@ app.use(cookieSession({
 
 app.set("view engine", "ejs");
 
-const bcrypt = require('bcrypt');
+let globalErrMsg = "";
+
+//==============================================================================================================================
+// DATABASES
+//==============================================================================================================================
 
 const urlDatabase = {
   "b2xVn2": {
@@ -31,6 +39,7 @@ const urlDatabase = {
   }
 };
 
+
 const users = { 
   "userRandomID": {
     id: "userRandomID", 
@@ -42,169 +51,157 @@ const users = {
     email: "user2@example.com", 
     password: "$2a$10$due6Y75r/VD/MBdnpKzOxe7R0AZhB4vxPmMNSbYpEozwTffR3MxGO"
   }
-}
+};
 
-var globalErrMsg = ""
+//==============================================================================================================================
+// GETs
+//==============================================================================================================================
 
+// Home page
 app.get("/", (req, res) => {
   res.render("home");
 });
 
-
-function urlsForUser(id) {
-  let userURLs = {};
-  for (let key in urlDatabase) {
-    if (urlDatabase[key].userID === id) {
-      userURLs[key] = urlDatabase[key] 
-    }
-  }
-  return userURLs
-}
-
-
-
+// List of owned URLs
 app.get("/urls", (req, res) => {
-  //let userID = req.cookies["user_id"];
   let userID = req.session.user_id;
-
   if (!userID) {
-    res.redirect("/")
+    res.redirect("/");
+    return;
   }
-
   let templateVars = { urls: urlsForUser(userID), user: users[userID], errorMsg: globalErrMsg };
   res.render("urls_index", templateVars);
 });
 
-app.post("/urls", (req, res) => {
-  let longURL = req.body["longURL"];
-  let shortURL = generateRandomString();
-  //let userID = req.cookies["user_id"]
-  let userID = req.session.user_id;
-  urlDatabase[shortURL] = {"shortURL": shortURL, "longURL": longURL, "userID": userID}
-  res.redirect("/urls");         
-});
-
-app.get("/u/:shortURL", (req, res) => {
-  let fullURL = urlDatabase[req.params.shortURL].longURL;
-  let userID = req.session.user_id;
-  if (!userID) {
-  res.redirect("/")
-  };
-  res.redirect(fullURL);
-});
-
+// Create a new short link
 app.get("/urls/new", (req, res) => {
-  //let userID = req.cookies["user_id"];
   let userID = req.session.user_id;
   let templateVars = { user: users[userID] };
-
   if (!userID) {
-    res.redirect("/")
+    res.redirect("/");
+    return;
   }
   res.render("urls_new", templateVars);
 });
 
+// Registration
+app.get("/register", (req, res) => {
+  let userID = req.session.user_id;
+  let templateVars = {user: users[userID]};
+  res.render("registration", templateVars);
+});
+
+// Login page
+app.get("/login", (req, res) => {
+  res.render("login");
+});
+
+// Updating a long URL
 app.get("/urls/:id", (req, res) => {
   let fullURL = urlDatabase[req.params.id].longURL;
-  //let userID = req.cookies["user_id"];
   let userID = req.session.user_id;
-  let templateVars = { shortURL: req.params.id, fullURL: fullURL, user: users[userID]  };
-
+  let templateVars = {shortURL: req.params.id, fullURL: fullURL, user: users[userID]};
   if (!userID) {
-  res.redirect("/")
+  res.redirect("/");
+  return;
   }
   res.render("urls_show", templateVars);
 });
 
-app.post("/urls/:id", (req, res) => {
-  let newLongURL = req.body["longURL"];
-  let dbUserID = urlDatabase[req.params.id].userID;
-  // let currentUser = req.cookies["user_id"];
-  let currentUser = req.session.user_id;
+// Redirect to the actual website
+app.get("/u/:shortURL", (req, res) => {
+  let fullURL = urlDatabase[req.params.shortURL].longURL;
+  let userID = req.session.user_id;
+  if (!userID) {
+  res.redirect("/");
+  return;
+  }
+  res.redirect(fullURL);
+});
 
+//==============================================================================================================================
+// POSTs
+//==============================================================================================================================
+
+app.post("/urls", (req, res) => {
+  let longURL = req.body.longURL;
+  let shortURL = generateRandomString();
+  let userID = req.session.user_id;
+  urlDatabase[shortURL] = {"shortURL": shortURL, "longURL": longURL, "userID": userID};
+  res.redirect("/urls");         
+});
+
+
+app.post("/urls/:id", (req, res) => {
+  let newLongURL = req.body.longURL;
+  let dbUserID = urlDatabase[req.params.id].userID;
+  let currentUser = req.session.user_id;
   if (dbUserID === currentUser) {
     urlDatabase[req.params.id].longURL = newLongURL;
     globalErrMsg = "";
     res.redirect("/urls");
     } else {
         globalErrMsg = "You are not authorized to perform this action since you are not the owner of this URL.";
-        res.redirect("/urls")
-      };
+        res.redirect("/urls");
+      }
 });
+
 
 app.post("/urls/:id/delete", (req, res) => {
   let dbUserID = urlDatabase[req.params.id].userID;
-  //let currentUser = req.cookies["user_id"];
   let currentUser = req.session.user_id;
-
-    if (dbUserID === currentUser) {
+  if (dbUserID === currentUser) {
     delete urlDatabase[req.params.id];
     globalErrMsg = "";
     res.redirect("/urls");
     } else {
         globalErrMsg = "You are not authorized to perform this action since you are not the owner of this URL.";
         res.redirect("/urls");
-      };
+      }
+});
+
+
+app.post("/register", (req, res) => {
+  let newUserRandomID = generateRandomString();
+  let newEmail = req.body.email;
+  let newPassword = req.body.password;
+  const hashedPassword = bcrypt.hashSync(newPassword, 10);
+  if (newEmail == "" || newPassword == "") {
+    res.status(400).end("Make sure both email and password are entered.");
+  }
+  for (let user_id in users) {
+    if (users[user_id].email == newEmail) {
+      res.status(400).end("User already exists.");
+      return;
+    }
+  }
+  users[newUserRandomID] = {"id": newUserRandomID, "email": newEmail, "password": hashedPassword};
+  req.session.user_id = newUserRandomID;
+  res.redirect("/urls");
+});
+
+
+app.post("/login", (req, res) => {
+  let email = req.body.email;
+  let password = req.body.password;
+
+  if (email == "" || password == "") {
+    res.status(400).end("Make sure both email and password are entered.");
+  }
+
+  for (let user_id in users) {
+    if (users[user_id].email === email && bcrypt.compareSync(password, users[user_id].password)) {
+      req.session.user_id = user_id;
+      res.redirect("/urls");
+    }
+  }
+  res.status(403).end("You have the wrong credentials.");
 });
 
 
 app.post("/logout", (req, res) => {
-  //res.clearCookie("user_id");
   req.session.user_id = null;
   res.redirect("/urls");
-});
-
-
-app.get("/register", (req, res) => {
-  //let userID = req.cookies["user_id"];
-  let userID = req.session.user_id;
-  let templateVars = { user: users[userID] };
-  res.render("registration", templateVars);
-});
-
-app.post("/register", (req, res) => {
-  let newUserRandomID = generateRandomString();
-  let newEmail = req.body["email"];
-  let newPassword = req.body["password"];
-  const hashedPassword = bcrypt.hashSync(newPassword, 10);
-
-  if (newEmail == "" || newPassword == "") {
-    res.status(400).end("Make sure both email and password are entered.")
-  } 
-
-  for (let user_id in users) {
-    if (users[user_id].email == newEmail) {
-      res.status(400).end("User already exists.")
-    }
-  }
-  
-  users[newUserRandomID] = {"id": newUserRandomID, "email": newEmail, "password": hashedPassword };
-  //res.cookie("user_id", newUserRandomID);
-  req.session.user_id = newUserRandomID
-  res.redirect("/urls");
-});
-
-app.get("/login", (req, res) => {
-
-  res.render("login")
-});
-
-app.post("/login", (req, res) => {
-  let email = req.body["email"];
-  let password = req.body["password"];
-
-  if (email == "" || password == "") {
-    res.status(400).end("Make sure both email and password are entered.")
-  } 
-
-  for (let user_id in users) {
-    if (users[user_id].email === email && bcrypt.compareSync(password, users[user_id].password)) {
-      //res.cookie("user_id", user_id);
-      req.session.user_id = user_id;
-      res.redirect("/urls");
-    }
-  };
-  res.status(403).end("You have the wrong credentials.");
 });
 
 
@@ -212,22 +209,26 @@ app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
 
-// found on : https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
-// npm randomstring library : https://www.npmjs.com/package/randomstring
+//==============================================================================================================================
+// FUNCTIONS
+//==============================================================================================================================
+
+// found generateRandomString from : https://stackoverflow.com/questions/1349404/generate-random-string-characters-in-javascript
+// hint for future : npm randomstring library : https://www.npmjs.com/package/randomstring
 function generateRandomString() {
   var randomString = "";
   var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
   for (var i = 0; i < 6; i++)
     randomString += possible.charAt(Math.floor(Math.random() * possible.length));
-
   return randomString;
 }
 
-// app.get("/urls.json", (req, res) => {
-//   res.json(urlDatabase);
-// });
-
-// app.get("/hello", (req, res) => {
-//   res.end("<html><body>Hello <b>World</b></body></html>\n");
-// });
+function urlsForUser(id) {
+  let userURLs = {};
+  for (let key in urlDatabase) {
+    if (urlDatabase[key].userID === id) {
+      userURLs[key] = urlDatabase[key];
+    }
+  }
+  return userURLs;
+}
